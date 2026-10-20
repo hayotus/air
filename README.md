@@ -10,6 +10,6 @@ Rideshare haydovchilar uchun jonli aeroport xaritasi: JFK, LaGuardia (LGA) va Ne
 - 🧭 Marker yoki pastdagi doirani bosish — darhol navigatsiya ochiladi
 
 ## Sayt
-👉 https://hayotus.github.io
+👉 https://hayotus.github.io/air
 
 React Native (Expo) ilovasining web versiyasi — bitta `index.html` faylida, Leaflet xaritasi bilan.
