@@ -1285,7 +1285,7 @@
         .sort((a, b) => a.eta - b.eta);
       const rowHtml = f => {
         const city = AIRPORT_CITIES[f.from] || '';
-        const fromTxt = city ? f.from + ' · ' + city + 'dan' : f.from + ' dan';
+        const fromTxt = city ? f.from + ' · ' + city + ' ' : f.from + ' ';
         return '<div class="f-row"><span class="f-time">~' + Math.round(f.eta) + ' daq</span><span class="f-num">' + f.num + '</span><span class="f-from">' + fromTxt + '</span></div>';
       };
       let shown = 0;
