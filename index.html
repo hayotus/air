@@ -508,7 +508,7 @@
   <div id="header">
     <button id="menuBtn" aria-label="Menyu">☰</button>
     <div class="head-title">
-      <div class="title-row"><span id="title">NYC RADAR</span><span id="ver">v3.6</span></div>
+      <div class="title-row"><span id="title">NYC RADAR</span><span id="ver">v3.7</span></div>
       <div id="traffic">DEMAND: STEADY 🚗</div>
     </div>
     <button id="pointsBtn" title="Uber Pro ballar">⭐ <span id="pointsNum">--</span>.0</button>
@@ -576,7 +576,7 @@
   <div class="drawer-foot">
     <div class="drawer-foot-card">
       <div class="drawer-foot-name">NYC TLC Driver</div>
-      <div class="drawer-foot-ver" id="drawerVer">v3.6</div>
+      <div class="drawer-foot-ver" id="drawerVer">v3.7</div>
     </div>
   </div>
 </aside>
@@ -593,7 +593,7 @@
     <div class="set-row"><span class="set-label">⚠️ Tezlik ogohlantirishi</span><button class="set-toggle on" id="setSpeedWarn" role="switch" aria-checked="true">ON</button></div>
     <div class="set-row"><span class="set-label">🔄 Avtomatik yangilash</span><button class="set-toggle on" id="setAutoUpd" role="switch" aria-checked="true">ON</button></div>
     <button id="settingsRefresh" class="wx-btn" style="width:100%;margin-top:12px">🔄 Yangilash</button>
-    <p class="points-foot">Versiya: <span id="settingsVer">v3.6</span></p>
+    <p class="points-foot">Versiya: <span id="settingsVer">v3.7</span></p>
   </div>
 </div>
 
@@ -721,11 +721,11 @@
 
   // Saqlangan lokatsiyalar.
   const SAVED_LOCATIONS = [
-    { id: 2, name: 'Office 40w St', address: '', lat: 40.75696, lon: -73.99338 },
-    { id: 3, name: 'Office 10e St', address: '', lat: 40.72818, lon: -73.98279 },
-    { id: 4, name: 'Virgin Hotel', address: '', lat: 40.74674, lon: -73.98865 },
-    { id: 5, name: 'Times square', address: '', lat: 40.7580, lon: -73.9855 },
-    { id: 6, name: 'Exit 13', address: '', lat: 40.63072, lon: -73.89528 },
+    { id: 2, name: 'Office 40w St', address: '360 W 40th St, New York, NY 10018', lat: 40.75696, lon: -73.99338 },
+    { id: 3, name: 'Office 10e St', address: '277 E 10th St, New York, NY 10009', lat: 40.72818, lon: -73.98279 },
+    { id: 4, name: 'Virgin Hotel', address: '1227 Broadway, New York, NY 10001', lat: 40.74674, lon: -73.98865 },
+    { id: 5, name: 'Times square', address: 'Times Square, Manhattan, NY', lat: 40.7580, lon: -73.9855 },
+    { id: 6, name: 'Exit 13', address: '1689 Remsen Ave, Brooklyn, NY 11236', lat: 40.63072, lon: -73.89528 },
   ];
 
   // Jamoat hojatxonalari — asosiy ro'yxat NYC Open Data API dan yuklanadi; bu zaxira ro'yxat.
@@ -835,9 +835,9 @@
     lastQuotaPaint = now;
     const left = Math.max(0, TT_DAILY_LIMIT - ttUsage.routing - ttUsage.tiles);
     const dv = document.getElementById('drawerVer');
-    if (dv) dv.textContent = 'v3.6.' + left;
+    if (dv) dv.textContent = 'v3.7.' + left;
     const sv = document.getElementById('settingsVer');
-    if (sv) sv.textContent = 'v3.6.' + left;
+    if (sv) sv.textContent = 'v3.7.' + left;
     checkStale();
   }
 
@@ -1384,6 +1384,20 @@
     if (rmEl && rmEl.classList.contains('open')) maybeRefreshRestrooms();
   }
 
+  // Recenter qo'shimcha vazifasi: barcha ma'lumotni majburan yangilash (keshlarni tozalab)
+  function refreshAll() {
+    Object.keys(googleCache).forEach(k => delete googleCache[k]);
+    wxCache.at = 0;
+    liveFlightsCache.at = 0;
+    chgCache.at = 0;
+    lastLocFetch = 0;
+    lastRstFetch = 0;
+    refreshRoutes(true);
+    updatePointsCircle();
+    fetchWeather().then(d => updateStripWx(d.mine.current.temperature_2m)).catch(() => {});
+    showToast('Hammasi yangilandi');
+  }
+
   function fitAll() {
     if (!map || userLat === null || !autoZoom) return;
     const pts = [[userLat, userLon], ...AIRPORTS.map(a => [a.lat, a.lon])];
@@ -1774,6 +1788,7 @@
     document.getElementById('recenter').addEventListener('click', () => {
       autoZoom = true;
       fitAll();
+      refreshAll();
     });
     document.getElementById('stripTraffic').addEventListener('click', toggleTraffic);
     document.getElementById('stripHotspots').addEventListener('click', () => {
