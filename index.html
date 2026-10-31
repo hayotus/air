@@ -20,7 +20,6 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚕</text></svg>">
-<link rel="apple-touch-icon" href="icon.svg">
 <link rel="stylesheet" href="vendor/leaflet.css">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -85,33 +84,51 @@
   #speedBadge.over .num, #speedBadge.over .unit { color: #fff; }
   #speedBadge.over .warn { display: block; }
 
-  /* Status strip — 4 ta shisha pill */
+  /* Pastki menyu paneli — airport kartalar tagida, tab uslubi: katta icon + tagida yozuv.
+     Aktiv tab: rangli icon, qora qalin yozuv va ustida sariq (amber) chiziqcha */
   #statusStrip {
-    display: flex; gap: 5px; pointer-events: auto; overflow-x: auto;
-    scrollbar-width: none; padding: 1px;
+    display: flex; pointer-events: auto; margin-top: 10px;
+    background: #FFFFFF; border-top: 3px solid #F5B301; border-radius: 16px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.45); overflow: hidden;
   }
-  #statusStrip::-webkit-scrollbar { display: none; }
   .strip-pill {
-    flex: none; background: rgba(255,255,255,0.92); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-    border: 1px solid rgba(0,0,0,0.06); border-radius: 999px; padding: 7px 6px;
-    font-size: 12px; font-weight: 800; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-    white-space: nowrap; color: #111827;
+    flex: 1; min-width: 0; position: relative;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    background: transparent; border: none; cursor: pointer;
+    padding: 10px 2px 8px; -webkit-tap-highlight-color: transparent;
+    font-family: inherit;
   }
   .strip-pill:active { transform: scale(0.96); }
-  #stripTraffic { color: #059669; }
-  #stripTraffic.off { color: #6B7280; }
-  #stripHotspots { color: #D97706; }
-  #stripLocations { color: #DC2626; }
-  #stripRestrooms { color: #0284C7; }
-  #stripWx { color: #B45309; }
+  .strip-pill .tab-ic { font-size: 23px; line-height: 1.1; filter: grayscale(1); opacity: 0.45; }
+  .strip-pill .tab-ic svg { width: 27px; height: 27px; display: block; }
+  .strip-pill .tab-lb {
+    font-size: 10.5px; font-weight: 700; color: #9CA3AF;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  }
+  #stripEzpass .tab-lb { font-size: 10px; }
+  .strip-pill.active .tab-ic { filter: none; opacity: 1; }
+  .strip-pill.active .tab-lb { color: #111827; font-weight: 800; }
+  /* Weather tugmasi header'da (points yonida) */
+  #header #stripWx { flex: none; flex-direction: row; align-items: center; gap: 5px; background: rgba(18,18,18,0.88); border: 1px solid rgba(255,255,255,0.35); border-radius: 16px; padding: 6px 10px; }
+  #header #stripWx .tab-ic { filter: none; opacity: 1; font-size: 15px; }
+  #header #stripWx .tab-lb { font-size: 11px; font-weight: 700; color: #fff; }
+  /* UberPro havolasi (strip'da, weather o'rnida) */
+  .uberpro-pill { text-decoration: none; }
+  .uberpro-pill .tab-ic { filter: none; opacity: 1; }
+  .uberpro-pill .up-lb { color: #111827; font-weight: 800; }
+  .uberpro-pill .up-pro { color: #276EF1; }
+  .strip-pill.active::before {
+    content: ''; position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
+    width: 36px; height: 5px; border-radius: 3px; background: #F5B301;
+  }
 
   /* O'ng tomondagi markazlash tugmasi (pastda, kartalar ustida) */
   #sideBtns {
-    position: absolute; right: 12px; bottom: 265px; z-index: 1000;
+    position: absolute; right: 12px; bottom: 335px; z-index: 1000;
     display: flex; flex-direction: column; gap: 10px;
   }
   .side-btn {
-    width: 56px; height: 56px; border-radius: 50%;
+    width: 44px; height: 44px; border-radius: 50%;
     background: rgba(255,255,255,0.96); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
     border: 2px solid #0EA5E9; color: #0284C7;
     font-size: 20px; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.35);
@@ -284,13 +301,13 @@
   .f-from { font-size: 12px; color: #B8B8BD; }
 
   /* Ob-havo oynasi */
-  #weatherModal, #chargeModal {
+  #weatherModal {
     display: none; position: fixed; inset: 0; z-index: 2100;
     background: rgba(0,0,0,0.72);
     align-items: center; justify-content: center; padding: 16px;
   }
-  #weatherModal.open, #chargeModal.open { display: flex; }
-  #weatherClose, #chargeClose {
+  #weatherModal.open { display: flex; }
+  #weatherClose {
     width: 34px; height: 34px; border-radius: 50%; border: 1px solid #3A3A3C;
     background: #1C1C1E; color: #fff; font-size: 14px; cursor: pointer;
   }
@@ -323,6 +340,13 @@
   .restroom-marker {
     width: 28px; height: 28px; border-radius: 50%;
     background: rgba(255,255,255,0.95); border: 2px solid #0A84FF;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.6); cursor: pointer;
+  }
+  /* Tesla metkasi */
+  .tesla-marker {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(255,255,255,0.95); border: 2px solid #F59E0B;
     display: flex; align-items: center; justify-content: center;
     font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.6); cursor: pointer;
   }
@@ -364,6 +388,26 @@
     max-height: min(350px, 55vh); overflow-y: auto;
   }
   #locMenu.open { display: block; }
+  /* Tesla oynasi (restroom kabi suzuvchi panel) */
+  #teslaMenu {
+    display: none; position: fixed; top: 120px; right: 8px;
+    width: min(250px, calc(100vw - 32px)); padding: 4px; z-index: 1300;
+    background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none;
+    border: none;
+    border-radius: 16px; box-shadow: none;
+    max-height: min(350px, 55vh); overflow-y: auto;
+  }
+  #teslaMenu.open { display: block; }
+  /* Tochka oynasi (restroom kabi suzuvchi panel) */
+  #tochkaMenu {
+    display: none; position: fixed; top: 120px; right: 8px;
+    width: min(250px, calc(100vw - 32px)); padding: 4px; z-index: 1300;
+    background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none;
+    border: none;
+    border-radius: 16px; box-shadow: none;
+    max-height: min(350px, 55vh); overflow-y: auto;
+  }
+  #tochkaMenu.open { display: block; }
   .location-option {
     display: flex; align-items: center; gap: 6px;
     width: 100%; margin: 3px 0; padding: 6px 8px;
@@ -388,11 +432,45 @@
   .loc-badge .v { color: #fff; font-size: 11px; font-weight: 800; line-height: 1; }
   .loc-badge .u { color: #8E8E93; font-size: 8px; font-weight: 600; margin-top: 1px; }
   /* Location + Restroom oynalari: 70% shaffof, har qator ramkada — nom/masofa/vaqt aniq, orqada map ko'rinadi */
-  #locMenu .location-option, #restroomMenu .location-option { padding: 6px 8px; margin: 3px 0; background: rgba(17,24,39,0.30); border: 1.5px solid rgba(255,255,255,0.5); border-radius: 12px; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-  #locMenu .loc-name, #restroomMenu .loc-name { font-size: 15px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
-  #locMenu .loc-badge, #restroomMenu .loc-badge { width: 38px; height: 38px; background: rgba(28,28,30,0.55); }
-  #locMenu .loc-badge .v, #restroomMenu .loc-badge .v { font-size: 14px; color: #fff; }
-  #locMenu .loc-badge .u, #restroomMenu .loc-badge .u { font-size: 9px; color: #D1D5DB; }
+  #locMenu .location-option, #restroomMenu .location-option, #teslaMenu .location-option, #tochkaMenu .location-option { padding: 6px 8px; margin: 3px 0; background: rgba(17,24,39,0.30); border: 1.5px solid rgba(255,255,255,0.5); border-radius: 12px; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  #locMenu .loc-name, #restroomMenu .loc-name, #teslaMenu .loc-name, #tochkaMenu .loc-name { font-size: 15px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+  #locMenu .loc-badge, #restroomMenu .loc-badge, #teslaMenu .loc-badge, #tochkaMenu .loc-badge { width: 38px; height: 38px; background: rgba(28,28,30,0.55); }
+  #locMenu .loc-badge .v, #restroomMenu .loc-badge .v, #teslaMenu .loc-badge .v, #tochkaMenu .loc-badge .v { font-size: 14px; color: #fff; }
+  #locMenu .loc-badge .u, #restroomMenu .loc-badge .u, #tochkaMenu .loc-badge .u { font-size: 9px; color: #D1D5DB; }
+
+
+  /* Tochka markeri: qizil doira, ichida mehmonxonlar soni */
+  .tochka-marker {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #E02424; border: 2px solid #fff; color: #fff;
+    font-size: 13px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6); cursor: pointer;
+  }
+  /* Kamera markeri */
+  .cam-marker {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(255,255,255,0.92); border: 2px solid #FF3B30;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; box-shadow: 0 1px 5px rgba(0,0,0,0.5);
+  }
+  /* Kamera ogohlantirish banneri */
+  #camAlert {
+    display: none; position: fixed; top: calc(env(safe-area-inset-top) + 76px); left: 50%;
+    transform: translateX(-50%); z-index: 2400;
+    background: rgba(224,36,36,0.95); color: #fff;
+    font-size: 16px; font-weight: 800; white-space: nowrap;
+    padding: 10px 18px; border-radius: 999px; box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+  }
+  #camAlert.show { display: block; animation: camBlink 0.5s ease-in-out 6 alternate; }
+  @keyframes camBlink { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.07); } }
+  /* Kunduzgi yorqin rejim: quyoshda yuqori kontrast */
+  body.day-bright .leaflet-tile-pane { filter: brightness(1.06) contrast(1.15) saturate(1.12); }
+  body.day-bright #locMenu .location-option, body.day-bright #restroomMenu .location-option,
+  body.day-bright #teslaMenu .location-option, body.day-bright #tochkaMenu .location-option {
+    background: rgba(10,14,24,0.62); border-color: rgba(255,255,255,0.85);
+  }
+  body.day-bright .etaCard { box-shadow: 0 2px 14px rgba(0,0,0,0.45); }
 
   /* Yon menyu (drawer) */
   #drawerOverlay {
@@ -448,6 +526,18 @@
   }
   .drawer-link:active { background: rgba(14,165,233,0.15); }
   .drawer-link .dl-ico { font-size: 16px; }
+  /* Tezkor havolalar bo'limlari (ochilib-yopiladigan) */
+  .drawer-group-head {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 12px; margin-top: 4px;
+    color: #fff; font-size: 14px; font-weight: 800; text-align: left;
+    background: rgba(245,179,1,0.13); border: 1px solid rgba(245,179,1,0.35); border-radius: 12px;
+    cursor: pointer;
+  }
+  .drawer-group-head .dg-arrow { margin-left: auto; font-size: 12px; color: #F5B301; transition: transform 0.2s ease; }
+  .drawer-group-head.open .dg-arrow { transform: rotate(180deg); }
+  .drawer-group { display: none; flex-direction: column; gap: 6px; padding-left: 10px; }
+  .drawer-group.open { display: flex; }
   .drawer-foot {
     margin-top: auto; padding-top: 18px;
   }
@@ -460,7 +550,7 @@
 
   /* Toast (kichik xabar) */
   #toast {
-    position: fixed; left: 50%; bottom: 240px; z-index: 3000;
+    position: fixed; left: 50%; bottom: 312px; z-index: 3000;
     transform: translateX(-50%) translateY(8px);
     background: rgba(17,24,39,0.96); color: #fff; font-size: 13px; font-weight: 700;
     padding: 11px 18px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14);
@@ -499,9 +589,12 @@
   }
   .wx-btn:active { opacity: 0.85; }
 
+  #offlineBar { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 4000; background: #b91c1c; color: #fff; text-align: center; font-size: 13px; font-weight: 700; padding: calc(env(safe-area-inset-top, 0px) + 6px) 8px 6px; }
+  #offlineBar.show { display: block; }
 </style>
 </head>
 <body>
+<div id="offlineBar">📴 Internet yo'q — eski ma'lumot ko'rsatilmoqda</div>
 
 
 <div id="map"></div>
@@ -515,31 +608,28 @@
   <div id="header">
     <button id="menuBtn" aria-label="Menyu">☰</button>
     <div class="head-title">
-      <div class="title-row"><span id="title">NYC RADAR</span><span id="ver">v3.15</span></div>
+      <div class="title-row"><span id="title">NYC RADAR</span><span id="ver">v3.27</span></div>
       <div id="traffic">DEMAND: STEADY 🚗</div>
     </div>
     <button id="pointsBtn" title="Uber Pro ballar">⭐ <span id="pointsNum">--</span>.0</button>
+    <button class="strip-pill" id="stripWx"><span class="tab-ic">🌙</span><span class="tab-lb">—°F</span></button>
     <div id="speedBadge">
       <span class="num" id="speedNum">0</span>
       <span class="unit">MPH</span>
       <div class="warn">LIMIT 30!</div>
     </div>
   </div>
-  <div id="statusStrip">
-    <button class="strip-pill" id="stripTraffic">🚦 Traffic</button>
-    <button class="strip-pill" id="stripLocations">📍 Location</button>
-    <button class="strip-pill" id="stripRestrooms">🚻 Restrooms</button>
-    <button class="strip-pill" id="stripWx">🌙 —°F</button>
-    <button class="strip-pill" id="stripHotspots" aria-label="Hotspots">⚡</button>
-  </div>
 </div>
 
 <div id="sideBtns">
-  <button class="side-btn" id="recenter" aria-label="Markazlash"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0284C7" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.6" fill="#0284C7" stroke="none"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg></button>
+  <button class="side-btn" id="recenter" aria-label="Markazlash"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284C7" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.6" fill="#0284C7" stroke="none"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg></button>
 </div>
 
 <div id="restroomMenu"></div>
 <div id="locMenu"></div>
+<div id="teslaMenu"></div>
+<div id="tochkaMenu"></div>
+<div id="camAlert">📷 Tezlik kamerasi oldinda!</div>
 
 <div id="etaSection">
   <div id="etaHead">
@@ -547,6 +637,15 @@
     <span id="autoStatus">● Auto Updating</span>
   </div>
   <div id="etaCards"></div>
+  <div id="statusStrip">
+    <button class="strip-pill active" id="stripTraffic"><span class="tab-ic">🚦</span><span class="tab-lb">Traffic</span></button>
+    <button class="strip-pill" id="stripLocations"><span class="tab-ic">📍</span><span class="tab-lb">Location</span></button>
+    <button class="strip-pill" id="stripRestrooms"><span class="tab-ic">🚻</span><span class="tab-lb">Restrooms</span></button>
+    <a class="strip-pill uberpro-pill" href="https://hayotus.github.io/uber" target="_blank" rel="noopener" aria-label="Uber Pro"><span class="tab-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="5.5" width="13" height="13" rx="2" transform="rotate(45 12 12)" fill="#276EF1"/></svg></span><span class="tab-lb up-lb">Uber<span class="up-pro">Pro</span></span></a>
+    <button class="strip-pill" id="stripHotspots" aria-label="Tesla"><span class="tab-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#CC0000" d="m12 5.362l2.475-3.026s4.245.09 8.471 2.054c-1.082 1.636-3.231 2.438-3.231 2.438c-.146-1.439-1.154-1.79-4.354-1.79L12 24L8.619 5.034c-3.18 0-4.188.354-4.335 1.792c0 0-2.146-.795-3.229-2.43C5.28 2.431 9.525 2.34 9.525 2.34zl-.004.002H12zm0-3.899c3.415-.03 7.326.528 11.328 2.28c.535-.968.672-1.395.672-1.395C19.625.612 15.528.015 12 0C8.472.015 4.375.61 0 2.349c0 0 .195.525.672 1.396C4.674 1.989 8.585 1.435 12 1.46z"/></svg></span><span class="tab-lb">Tesla</span></button>
+    <button class="strip-pill" id="stripTochka" aria-label="Tochka"><span class="tab-ic">🎯</span><span class="tab-lb">Tochka</span></button>
+    <button class="strip-pill active" id="stripEzpass" aria-label="EZPass"><span class="tab-ic">🛣️</span><span class="tab-lb">EZPass ON</span></button>
+  </div>
 </div>
 
 <div id="drawerOverlay"></div>
@@ -568,22 +667,31 @@
   <div class="drawer-div"></div>
   <div class="drawer-sec">Tezkor havolalar</div>
   <div class="drawer-links">
-    <a class="drawer-link" href="#" id="drawerTlcLink"><span class="dl-ico">📋</span>TLC license yangilash</a>
-    <a class="drawer-link" href="https://dmv.ny.gov/mydmv/sign-in-to-mydmv" target="_blank" rel="noopener"><span class="dl-ico">🪪</span>Driver License Tekshirish</a>
-    <a class="drawer-link" href="https://www.nyc.gov/site/finance/vehicles/vehicles.page" target="_blank" rel="noopener"><span class="dl-ico">💳</span>Ticket Tolash</a>
-    <a class="drawer-link" href="https://www.howsmydrivingny.nyc/" target="_blank" rel="noopener"><span class="dl-ico">🔍</span>Plate Ticket Tekshirish</a>
-    <a class="drawer-link" href="https://www.nyc.gov/site/tlc/drivers/check-license-status.page" target="_blank" rel="noopener"><span class="dl-ico">🚕</span>TLC Plate Tekshirish</a>
-    <a class="drawer-link" href="https://a156-nauf.nyc.gov/tlcup/" target="_blank" rel="noopener"><span class="dl-ico">🏛️</span>TLC UP Portal</a>
-    <a class="drawer-link" href="https://apps.nyc.gov/lars/" target="_blank" rel="noopener"><span class="dl-ico">🔄</span>TLC LARS Portal</a>
-    <a class="drawer-link" href="https://dmv.ny.gov/points-and-penalties/the-new-york-state-driver-point-system" target="_blank" rel="noopener"><span class="dl-ico">⭐</span>Pointlar Ro'yxati</a>
-    <a class="drawer-link" href="https://www.nyc.gov/site/finance/vehicles/dispute-a-ticket.page" target="_blank" rel="noopener"><span class="dl-ico">⚖️</span>Ticket Dispute</a>
-    <a class="drawer-link" href="https://nycserv.nyc.gov/NYCServWeb/PVO_Find_Towed_Vehicle.jsp" target="_blank" rel="noopener"><span class="dl-ico">🚗</span>Towing Car Location</a>
-    <a class="drawer-link" href="https://nyctmc.org/" target="_blank" rel="noopener"><span class="dl-ico">📹</span>Webcamera Live New York</a>
+    <button class="drawer-group-head" data-group="grpTlc"><span class="dl-ico">🚕</span>TLC section<span class="dg-arrow">▾</span></button>
+    <div class="drawer-group" id="grpTlc">
+      <a class="drawer-link" href="#" id="drawerTlcLink"><span class="dl-ico">📋</span>TLC license yangilash</a>
+      <a class="drawer-link" href="https://www.nyc.gov/site/tlc/drivers/check-license-status.page" target="_blank" rel="noopener"><span class="dl-ico">🚕</span>TLC Plate Tekshirish</a>
+      <a class="drawer-link" href="https://a156-nauf.nyc.gov/tlcup/" target="_blank" rel="noopener"><span class="dl-ico">🏛️</span>TLC UP Portal</a>
+      <a class="drawer-link" href="https://apps.nyc.gov/lars/" target="_blank" rel="noopener"><span class="dl-ico">🔄</span>TLC LARS Portal</a>
+    </div>
+    <button class="drawer-group-head" data-group="grpDmv"><span class="dl-ico">🪪</span>DMV section<span class="dg-arrow">▾</span></button>
+    <div class="drawer-group" id="grpDmv">
+      <a class="drawer-link" href="https://dmv.ny.gov/mydmv/sign-in-to-mydmv" target="_blank" rel="noopener"><span class="dl-ico">🪪</span>Driver License Tekshirish</a>
+      <a class="drawer-link" href="https://www.nyc.gov/site/finance/vehicles/vehicles.page" target="_blank" rel="noopener"><span class="dl-ico">💳</span>Ticket Tolash</a>
+      <a class="drawer-link" href="https://www.nyc.gov/site/finance/vehicles/dispute-a-ticket.page" target="_blank" rel="noopener"><span class="dl-ico">⚖️</span>Ticket Dispute</a>
+      <a class="drawer-link" href="https://dmv.ny.gov/points-and-penalties/the-new-york-state-driver-point-system" target="_blank" rel="noopener"><span class="dl-ico">⭐</span>Pointlar Ro'yxati</a>
+      <a class="drawer-link" href="https://www.howsmydrivingny.nyc/" target="_blank" rel="noopener"><span class="dl-ico">🔍</span>Plate Ticket Tekshirish</a>
+    </div>
+    <button class="drawer-group-head" data-group="grpInfo"><span class="dl-ico">ℹ️</span>Kerakli ma'lumotlar<span class="dg-arrow">▾</span></button>
+    <div class="drawer-group" id="grpInfo">
+      <a class="drawer-link" href="https://nycserv.nyc.gov/NYCServWeb/PVO_Find_Towed_Vehicle.jsp" target="_blank" rel="noopener"><span class="dl-ico">🚗</span>Towing Car Location</a>
+      <a class="drawer-link" href="https://nyctmc.org/" target="_blank" rel="noopener"><span class="dl-ico">📹</span>Webcamera Live New York</a>
+    </div>
   </div>
   <div class="drawer-foot">
     <div class="drawer-foot-card">
       <div class="drawer-foot-name">NYC TLC Driver</div>
-      <div class="drawer-foot-ver" id="drawerVer">v3.15</div>
+      <div class="drawer-foot-ver" id="drawerVer">v3.27</div>
     </div>
   </div>
 </aside>
@@ -599,8 +707,12 @@
     <div class="set-row"><span class="set-label">🚦 Traffic qatlami</span><button class="set-toggle on" id="setTraffic" role="switch" aria-checked="true">ON</button></div>
     <div class="set-row"><span class="set-label">⚠️ Tezlik ogohlantirishi</span><button class="set-toggle on" id="setSpeedWarn" role="switch" aria-checked="true">ON</button></div>
     <div class="set-row"><span class="set-label">🔄 Avtomatik yangilash</span><button class="set-toggle on" id="setAutoUpd" role="switch" aria-checked="true">ON</button></div>
+    <div class="set-row"><span class="set-label">📷 Kamera ogohlantirishi</span><button class="set-toggle on" id="setCameras" role="switch" aria-checked="true">ON</button></div>
+    <div class="set-row"><span class="set-label">🔊 Ovozli ogohlantirish</span><button class="set-toggle" id="setVoice" role="switch" aria-checked="false">OFF</button></div>
+    <div class="set-row"><span class="set-label">☀️ Kunduzgi yorqin rejim</span><button class="set-toggle on" id="setBright" role="switch" aria-checked="true">ON</button></div>
+    <div class="set-row"><span class="set-label">🔋 Batareya tejash</span><button class="set-toggle" id="setBattery" role="switch" aria-checked="false">OFF</button></div>
     <button id="settingsRefresh" class="wx-btn" style="width:100%;margin-top:12px">🔄 Yangilash</button>
-    <p class="points-foot">Versiya: <span id="settingsVer">v3.15</span></p>
+    <p class="points-foot">Versiya: <span id="settingsVer">v3.27</span></p>
   </div>
 </div>
 
@@ -614,15 +726,6 @@
   </div>
 </div>
 
-<div id="chargeModal">
-  <div class="points-card">
-    <div class="points-head">
-      <span class="points-title">⚡ Tesla Supercharger</span>
-      <button id="chargeClose" aria-label="Yopish">✕</button>
-    </div>
-    <div id="chargeBody"><p class="points-note">Yuklanmoqda...</p></div>
-  </div>
-</div>
 
 <div id="weatherModal">
   <div class="points-card">
@@ -760,27 +863,17 @@
   let restroomsLoaded = false;
   const RESTROOM_SHOW = 20;
 
+  // Navigatsiya: HAMMA qurilmada faqat Google Maps (foydalanuvchi buyrug'i, 2026-10-30)
   function openLocationNavigation(location) {
-    const ua = navigator.userAgent || '';
-    const isIOS = /iPhone|iPad|iPod/i.test(ua);
-    const isAndroid = /Android/i.test(ua);
-    let url;
-    if (isIOS) {
-      url = `maps://?daddr=${location.lat},${location.lon}&dirflg=d`;
-    } else if (isAndroid) {
-      url = `geo:${location.lat},${location.lon}?q=${location.lat},${location.lon}(${encodeURIComponent(location.address)})`;
-    } else {
-      url = `https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lon}`;
-    }
-    window.location.href = url;
+    window.location.href = `https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lon}`;
   }
 
   // Sozlamalar (localStorage da saqlanadi)
   const SETTINGS_KEY = 'radarSettingsV1';
-  let settings = { traffic: true, speedWarn: true, autoUpdate: true };
+  let settings = { traffic: true, speedWarn: true, autoUpdate: true, ezpass: true, cameras: true, voice: false, brightAuto: true, batterySaver: false };
   try {
     const savedSet = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
-    if (savedSet) settings = { traffic: true, speedWarn: true, autoUpdate: true, ...savedSet };
+    if (savedSet) settings = { traffic: true, speedWarn: true, autoUpdate: true, ezpass: true, cameras: true, voice: false, brightAuto: true, batterySaver: false, ...savedSet };
   } catch (e) {}
   function saveSettings() {
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
@@ -792,9 +885,20 @@
   // Google Directions kaliti (kalit kelgach to'ldiriladi; bo'sh bo'lsa Google routing o'chirilgan)
   const _gk = ['AIzaSyAllWCzmo5-jCq1', '3g1AhvbQ0EafwblrXjg'];
   const GOOGLE_KEY = _gk[0] + _gk[1];
+  // Tashqi so'rovlar uchun timeout — osilib qolgan so'rov zaxiraga o'tishga xalaqit bermaydi
+  function fetchT(url, ms) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), ms || 10000);
+    return fetch(url, { signal: ctl.signal }).finally(() => clearTimeout(t));
+  }
+  // Tashqi matnlarni HTML ga xavfsiz chiqarish (XSS himoyasi)
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
 
   let map, userMarker, autoZoom = true;
   let trafficLayer = null, trafficOn = settings.traffic;
+  let ezpassOn = settings.ezpass;
   let userLat = null, userLon = null;
   let lastRouteFetch = 0, lastFetchLat = null, lastFetchLon = null;
   const routeLines = {};
@@ -840,11 +944,11 @@
     const now = Date.now();
     if (!force && now - lastQuotaPaint < 1500) return;
     lastQuotaPaint = now;
-    const left = Math.max(0, TT_DAILY_LIMIT - ttUsage.routing - ttUsage.tiles);
+    const left = googleLeft(); // Versiya suffiksi = Google kunlik limitdan qolgani (masalan v3.26.200 = 200 ta qoldi)
     const dv = document.getElementById('drawerVer');
-    if (dv) dv.textContent = 'v3.15.' + left;
+    if (dv) dv.textContent = 'v3.27.' + left;
     const sv = document.getElementById('settingsVer');
-    if (sv) sv.textContent = 'v3.15.' + left;
+    if (sv) sv.textContent = 'v3.27.' + left;
     checkStale();
   }
 
@@ -867,6 +971,7 @@
     if (gUsage.day !== today) gUsage = { day: today, count: 0 };
     gUsage.count++;
     try { localStorage.setItem('gUsageV1', JSON.stringify(gUsage)); } catch (e) {}
+    paintQuota(false);
   }
 
   function googleLeft() {
@@ -916,6 +1021,7 @@
           destination: { lat: airport.lat, lng: airport.lon },
           travelMode: google.maps.TravelMode.DRIVING
         };
+        if (!ezpassOn) req.avoidTolls = true;
         if (trafficOn) {
           req.drivingOptions = { departureTime: new Date(), trafficModel: google.maps.TrafficModel.BEST_GUESS };
         }
@@ -957,10 +1063,9 @@
   function updateTrafficLabel() {
     const strip = document.getElementById('stripTraffic');
     if (strip) {
-      let label = '🚦 Traffic';
-      if (trafficOn && (routeDegraded || tileDegraded)) label += ' ⚠';
-      strip.textContent = label;
-      strip.classList.toggle('off', !trafficOn);
+      const lb = strip.querySelector('.tab-lb');
+      if (lb) lb.textContent = 'Traffic' + ((trafficOn && (routeDegraded || tileDegraded)) ? ' ⚠' : '');
+      strip.classList.toggle('active', trafficOn);
     }
   }
 
@@ -976,13 +1081,48 @@
     refreshRoutes(true);
     const rm = document.getElementById('restroomMenu');
     if (rm && rm.classList.contains('open')) refreshRestroomRoutes();
+    const tm = document.getElementById('teslaMenu');
+    if (tm && tm.classList.contains('open')) refreshChargerRoutes();
   }
 
-  // Menyu o'z tugmasining tagidan ochiladi (har qanday ekranda tugmalarni yopmaydi)
+  // EZPass tugmasi: ON = pullik (toll) yo'llar ham ruxsat, OFF = faqat tollsiz yo'llar
+  // Barcha marshrutlar shu bitta fetchRoute orqali o'tadi (aeroportlar, lokatsiyalar, restroom, zaryadlash)
+  function updateEzpassLabel() {
+    const strip = document.getElementById('stripEzpass');
+    if (strip) {
+      const lb = strip.querySelector('.tab-lb');
+      if (lb) lb.textContent = ezpassOn ? 'EZPass ON' : 'EZPass OFF';
+      strip.classList.toggle('active', ezpassOn);
+    }
+  }
+
+  function toggleEzpass() {
+    ezpassOn = !ezpassOn;
+    settings.ezpass = ezpassOn;
+    saveSettings();
+    Object.keys(googleCache).forEach(k => delete googleCache[k]);
+    updateEzpassLabel();
+    lastLocFetch = 0;
+    lastRstFetch = 0;
+    refreshRoutes(true);
+    const rm = document.getElementById('restroomMenu');
+    if (rm && rm.classList.contains('open')) refreshRestroomRoutes();
+    const tm = document.getElementById('teslaMenu');
+    if (tm && tm.classList.contains('open')) refreshChargerRoutes();
+    showToast(ezpassOn ? 'EZPass ON — pullik yo\'llar bilan' : 'EZPass OFF — faqat tollsiz yo\'llar');
+  }
+
+  // Menyu tugma yonidan ochiladi: tugma ekran pastida bo'lsa — yuqoriga, tepada bo'lsa — pastga
   function placeMenuUnderButton(menu, toggle) {
     if (!menu || !toggle) return;
     const r = toggle.getBoundingClientRect();
-    menu.style.top = (r.bottom + 6) + 'px';
+    if (r.top > window.innerHeight / 2) {
+      menu.style.top = 'auto';
+      menu.style.bottom = (window.innerHeight - r.top + 6) + 'px';
+    } else {
+      menu.style.bottom = 'auto';
+      menu.style.top = (r.bottom + 6) + 'px';
+    }
   }
 
   function restoreSavedView() {
@@ -1002,25 +1142,14 @@
 
   // --- Navigatsiyani ochish (marker yoki doira bosilganda) ---
   function openNavigation(airport) {
-    const ua = navigator.userAgent || '';
-    const isIOS = /iPhone|iPad|iPod/i.test(ua);
-    const isAndroid = /Android/i.test(ua);
-    let url;
-    if (isIOS) {
-      url = `maps://?daddr=${airport.lat},${airport.lon}&dirflg=d`;
-    } else if (isAndroid) {
-      url = `geo:${airport.lat},${airport.lon}?q=${airport.lat},${airport.lon}(${encodeURIComponent(airport.name)})`;
-    } else {
-      url = `https://www.google.com/maps/dir/?api=1&destination=${airport.lat},${airport.lon}`;
-    }
-    window.location.href = url;
+    window.location.href = `https://www.google.com/maps/dir/?api=1&destination=${airport.lat},${airport.lon}`;
   }
 
   // --- Google (avval) / TomTom orqali marshrut (TRAFFIC tugmasiga qarab: on = tirbandlik bilan, off = trafficsiz) ---
   // useGoogle=true faqat aeroport kartalar uchun (lokatsiya/restroom TomTom'da qoladi — kvota tejaladi)
   async function fetchRoute(uLat, uLon, airport, useGoogle) {
     if (useGoogle && GOOGLE_KEY && !googleDisabled) {
-      const gKey = airport.id + (trafficOn ? ':t' : ':f');
+      const gKey = airport.id + (trafficOn ? ':t' : ':f') + (ezpassOn ? ':ez' : ':free') + '@' + uLat.toFixed(3) + ',' + uLon.toFixed(3);
       const cached = googleCache[gKey];
       if (cached && Date.now() - cached.ts < GOOGLE_CACHE_TTL) return cached.data;
       if (googleLeft() > 0) {
@@ -1029,9 +1158,9 @@
       }
     }
     try {
-      const url = `https://api.tomtom.com/routing/1/calculateRoute/${uLat},${uLon}:${airport.lat},${airport.lon}/json?key=${TOMTOM_KEY}&traffic=${trafficOn}&routeRepresentation=polyline&travelMode=car`;
+      const url = `https://api.tomtom.com/routing/1/calculateRoute/${uLat},${uLon}:${airport.lat},${airport.lon}/json?key=${TOMTOM_KEY}&traffic=${trafficOn}&routeRepresentation=polyline&travelMode=car${ezpassOn ? '' : '&avoid=tollRoads'}`;
       ttCount('routing');
-      const res = await fetch(url);
+      const res = await fetchT(url);
       const data = await res.json();
       if (data.routes && data.routes.length > 0) {
         const route = data.routes[0];
@@ -1060,7 +1189,7 @@
   async function fetchRouteOSRM(uLat, uLon, airport) {
     try {
       const url = `https://router.project-osrm.org/route/v1/driving/${uLon},${uLat};${airport.lon},${airport.lat}?overview=full&geometries=geojson`;
-      const res = await fetch(url);
+      const res = await fetchT(url);
       const data = await res.json();
       if (data.routes && data.routes.length > 0) {
         const route = data.routes[0];
@@ -1111,13 +1240,13 @@
     if (restroomsLoaded) return;
     // 1) GitHub dagi tayyor baza — eng tez variant
     try {
-      const res = await fetch(RESTROOM_DB);
+      const res = await fetchT(RESTROOM_DB);
       const list = await res.json();
       if (Array.isArray(list) && list.length > 0) { RESTROOMS = list; restroomsLoaded = true; return; }
     } catch (e) { console.log('Restroom DB error:', e); }
     // 2) NYC Open Data API (zaxira)
     try {
-      const res = await fetch(RESTROOM_API);
+      const res = await fetchT(RESTROOM_API);
       const rows = await res.json();
       const list = [];
       rows.forEach((row, i) => {
@@ -1175,7 +1304,7 @@
       const btn = document.createElement('button');
       btn.className = 'location-option';
       btn.title = r.name;
-      btn.innerHTML = `<span class="loc-main"><span class="loc-name">${r.name}</span></span>` +
+      btn.innerHTML = `<span class="loc-main"><span class="loc-name">${esc(r.name)}</span></span>` +
         `<span class="loc-badges"><span class="loc-badge"><span class="v">${info ? info.dist : '--'}</span><span class="u">mi</span></span>` +
         `<span class="loc-badge min"><span class="v">${info ? info.mins : '--'}</span><span class="u">min</span></span></span>`;
       btn.addEventListener('click', () => openLocationNavigation(r));
@@ -1202,7 +1331,7 @@
     if (!map || userLat === null) return;
     const dLat = 805 / 111320;
     const dLon = 805 / (111320 * Math.cos(userLat * Math.PI / 180));
-    map.fitBounds([[userLat - dLat, userLon - dLon], [userLat + dLat, userLon + dLon]], { paddingTopLeft: [30, 130], paddingBottomRight: [30, 250] });
+    map.fitBounds([[userLat - dLat, userLon - dLon], [userLat + dLat, userLon + dLon]], { paddingTopLeft: [30, 130], paddingBottomRight: [30, 320] });
   }
 
   // Locations menyusi ochiq paytda uning metkalari ham ko'rinadi
@@ -1321,7 +1450,7 @@
     if (!map) return;
     const pts = SAVED_LOCATIONS.map(l => [l.lat, l.lon]);
     if (userLat !== null) pts.push([userLat, userLon]);
-    map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [30, 130], paddingBottomRight: [30, 250] });
+    map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [30, 130], paddingBottomRight: [30, 320] });
   }
 
   function initLocMenu() {
@@ -1330,9 +1459,11 @@
     if (!toggle || !menu) return;
     toggle.addEventListener('click', () => {
       const isOpen = menu.classList.toggle('open');
+      toggle.classList.toggle('active', isOpen);
       if (isOpen) {
         const rm = document.getElementById('restroomMenu');
-        if (rm && rm.classList.contains('open')) { rm.classList.remove('open'); syncRestroomMarkers(false); restoreSavedView(); }
+        if (rm && rm.classList.contains('open')) { rm.classList.remove('open'); document.getElementById('stripRestrooms').classList.remove('active'); syncRestroomMarkers(false); restoreSavedView(); }
+        closeTochkaMenu();
         placeMenuUnderButton(menu, toggle);
         if (map) savedView = { center: map.getCenter(), zoom: map.getZoom() };
         zoomToLocations();
@@ -1350,10 +1481,12 @@
     const menu = document.getElementById('restroomMenu');
     toggle.addEventListener('click', () => {
       const isOpen = menu.classList.toggle('open');
+      toggle.classList.toggle('active', isOpen);
       syncLocationMarkers(false);
       if (isOpen) {
         const lm = document.getElementById('locMenu');
-        if (lm && lm.classList.contains('open')) { lm.classList.remove('open'); restoreSavedView(); }
+        if (lm && lm.classList.contains('open')) { lm.classList.remove('open'); document.getElementById('stripLocations').classList.remove('active'); restoreSavedView(); }
+        closeTochkaMenu();
         placeMenuUnderButton(menu, toggle);
         restroomVisibleCount = 5;
         if (map) savedView = { center: map.getCenter(), zoom: map.getZoom() };
@@ -1362,6 +1495,312 @@
       }
       else { syncRestroomMarkers(false); restoreSavedView(); }
     });
+  }
+
+  // --- Tesla oynasi: restroom kabi suzuvchi panel + mapda ⚡ metkalar ---
+  let chargerList = null; // null = hali yuklanmagan
+  let chargerInfo = {};
+  let chargerLayer = null;
+  let chgSeq = 0;
+
+  function renderChargerMenu() {
+    const menu = document.getElementById('teslaMenu');
+    if (!menu) return;
+    menu.innerHTML = '';
+    if (!chargerList) {
+      menu.innerHTML = '<div class="location-option" style="cursor:default"><span class="loc-main"><span class="loc-name">Yuklanmoqda...</span></span></div>';
+      return;
+    }
+    if (!chargerList.length) {
+      menu.innerHTML = '<div class="location-option" style="cursor:default"><span class="loc-main"><span class="loc-name">Yaqin atrofda (50 km) Supercharger topilmadi</span></span></div>';
+      return;
+    }
+    chargerList.forEach((c, i) => {
+      const info = chargerInfo[i];
+      const btn = document.createElement('button');
+      btn.className = 'location-option';
+      btn.title = c.name;
+      btn.innerHTML = `<span class="loc-main"><span class="loc-name">⚡ ${esc(c.name)}</span></span>` +
+        `<span class="loc-badges"><span class="loc-badge"><span class="v">${info ? info.dist : (c.km * 0.621371).toFixed(1)}</span><span class="u">mi</span></span>` +
+        `<span class="loc-badge min"><span class="v">${info ? info.mins : '--'}</span><span class="u">min</span></span></span>`;
+      btn.addEventListener('click', () => openNavigation(c));
+      menu.appendChild(btn);
+    });
+  }
+
+  // Tesla menyusi ochiq paytda xaritada ⚡ metkalar ko'rinadi, yopilganda yashiriladi
+  function syncChargerMarkers(show) {
+    if (!map) return;
+    if (!show) {
+      if (chargerLayer) { map.removeLayer(chargerLayer); chargerLayer = null; }
+      return;
+    }
+    if (!chargerList) return;
+    if (!chargerLayer) chargerLayer = L.layerGroup().addTo(map);
+    chargerLayer.clearLayers();
+    chargerList.forEach(c => {
+      const icon = L.divIcon({ className: '', html: '<div class="tesla-marker">⚡</div>', iconSize: [28, 28], iconAnchor: [14, 14] });
+      const m = L.marker([c.lat, c.lon], { icon: icon });
+      m.bindTooltip('<b>' + c.name + '</b>', { direction: 'top', offset: [0, -14] });
+      m.on('click', () => openNavigation(c));
+      chargerLayer.addLayer(m);
+    });
+  }
+
+  function zoomToChargers() {
+    if (!map || !chargerList || !chargerList.length) return;
+    const pts = chargerList.map(c => [c.lat, c.lon]);
+    if (userLat !== null) pts.push([userLat, userLon]);
+    map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [30, 130], paddingBottomRight: [30, 320] });
+  }
+
+  async function refreshChargerRoutes() {
+    if (userLat === null || !chargerList || !chargerList.length) return;
+    const seq = ++chgSeq;
+    await Promise.all(chargerList.map(async (c, i) => {
+      const res = await fetchRoute(userLat, userLon, c);
+      if (seq !== chgSeq) return;
+      if (res) { chargerInfo[i] = { dist: res.distanceMiles, mins: res.durationMins }; renderChargerMenu(); }
+    }));
+  }
+
+  async function loadChargerMenu() {
+    try {
+      const data = await fetchChargers();
+      chargerList = data.list;
+    } catch (e) { chargerList = []; }
+    chargerInfo = {};
+    renderChargerMenu();
+    const tm = document.getElementById('teslaMenu');
+    if (tm && tm.classList.contains('open')) {
+      zoomToChargers();
+      syncChargerMarkers(true);
+      refreshChargerRoutes();
+    }
+  }
+
+  function initTeslaMenu() {
+    const toggle = document.getElementById('stripHotspots');
+    const menu = document.getElementById('teslaMenu');
+    if (!toggle || !menu) return;
+    toggle.addEventListener('click', () => {
+      const isOpen = menu.classList.toggle('open');
+      toggle.classList.toggle('active', isOpen);
+      syncLocationMarkers(false);
+      if (isOpen) {
+        const lm = document.getElementById('locMenu');
+        if (lm && lm.classList.contains('open')) { lm.classList.remove('open'); document.getElementById('stripLocations').classList.remove('active'); restoreSavedView(); }
+        const rm = document.getElementById('restroomMenu');
+        if (rm && rm.classList.contains('open')) { rm.classList.remove('open'); document.getElementById('stripRestrooms').classList.remove('active'); syncRestroomMarkers(false); restoreSavedView(); }
+        closeTochkaMenu();
+        placeMenuUnderButton(menu, toggle);
+        if (map) savedView = { center: map.getCenter(), zoom: map.getZoom() };
+        renderChargerMenu();
+        if (chargerList) { zoomToChargers(); syncChargerMarkers(true); refreshChargerRoutes(); }
+        loadChargerMenu();
+      }
+      else { syncChargerMarkers(false); restoreSavedView(); }
+    });
+  }
+
+  // --- Ovozli ogohlantirishlar (Web Speech) ---
+  let prevBonusState = null;
+  let etaVoiceAt = 0;
+  let etaVoiceReady = false;
+  function speak(text) {
+    if (!settings.voice) return;
+    try {
+      if (!('speechSynthesis' in window)) return;
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'uz-UZ';
+      u.rate = 1.05;
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  function maybeEtaVoice(airport, prevMins, newMins) {
+    if (!etaVoiceReady) return;
+    if (typeof prevMins !== 'number' || typeof newMins !== 'number') return;
+    const diff = newMins - prevMins;
+    if (Math.abs(diff) < 10) return;
+    const now = Date.now();
+    if (now - etaVoiceAt < 300000) return; // 5 daqiqada ko'pi bilan 1 marta
+    etaVoiceAt = now;
+    const nm = airport.code === 'HOME' ? 'Uy' : airport.code;
+    speak(nm + ' yo\'li ' + Math.abs(diff) + ' daqiqaga ' + (diff > 0 ? 'oshdi' : 'kamaydi') + '. Hozir ' + newMins + ' daqiqa.');
+  }
+
+  // --- Tezlik kameralari (OpenStreetMap, cameras.json) ---
+  let camList = null; // [[lat, lon], ...]
+  let camLayer = null;
+  let camAlertAt = {};
+  let lastCamSync = 0;
+  let audioCtx = null;
+  function beep() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const t = audioCtx.currentTime;
+      [0, 0.22].forEach(off => {
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.frequency.value = 880; o.type = 'sine';
+        g.gain.setValueAtTime(0.15, t + off);
+        g.gain.exponentialRampToValueAtTime(0.001, t + off + 0.18);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t + off); o.stop(t + off + 0.2);
+      });
+    } catch (e) {}
+  }
+  async function loadCameras() {
+    try {
+      const res = await fetchT('cameras.json');
+      const data = await res.json();
+      if (data && Array.isArray(data.cams)) camList = data.cams;
+    } catch (e) { if (!camList) camList = []; }
+    syncCameraMarkers(true);
+  }
+  // Kameralar: foydalanuvchidan 3 km ichidagilar xaritada ko'rinadi (30 s da bir yangilanadi)
+  function syncCameraMarkers(force) {
+    if (!camList) return;
+    if (!settings.cameras || userLat === null || !map) {
+      if (camLayer && map) { map.removeLayer(camLayer); camLayer = null; }
+      return;
+    }
+    const now = Date.now();
+    if (!force && now - lastCamSync < 30000) return;
+    lastCamSync = now;
+    if (!camLayer) camLayer = L.layerGroup().addTo(map);
+    camLayer.clearLayers();
+    camList.forEach(c => {
+      if (havKm(userLat, userLon, c[0], c[1]) <= 3) {
+        const icon = L.divIcon({ className: '', html: '<div class="cam-marker">📷</div>', iconSize: [22, 22], iconAnchor: [11, 11] });
+        camLayer.addLayer(L.marker([c[0], c[1]], { icon: icon, interactive: false }));
+      }
+    });
+  }
+  // Yaqinlashuv: 400 m ichida va tezlik 5 mph dan yuqori bo'lsa — banner + signal + ovoz
+  function checkCameraProximity(mph) {
+    if (!settings.cameras || !camList || userLat === null || mph < 5) return;
+    let bestKm = Infinity;
+    camList.forEach(c => {
+      const km = havKm(userLat, userLon, c[0], c[1]);
+      if (km < bestKm) bestKm = km;
+    });
+    if (bestKm > 0.4) return;
+    const now = Date.now();
+    if (now - (camAlertAt.last || 0) < 60000) return; // 1 daqiqada ko'pi bilan 1 signal
+    camAlertAt.last = now;
+    const el = document.getElementById('camAlert');
+    if (el) { el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 4500); }
+    beep();
+    speak('Oldinda tezlik kamerasi. Tezlikni pasaytiring.');
+  }
+
+  // --- Tochka oynasi: TOP-5 (0.3 milya driving ichidagi mehmonxonalar, NYC Open Data) ---
+  const TOCHKAS = [
+    { rank: 1, name: 'W 39th St & 8th Ave', lat: 40.75526, lon: -73.99241, hotels: 14, rooms: 2905 },
+    { rank: 2, name: 'W 37th St & 6th Ave', lat: 40.75091, lon: -73.98472, hotels: 9, rooms: 1585 },
+    { rank: 3, name: 'W 46th St & Broadway', lat: 40.75782, lon: -73.98367, hotels: 10, rooms: 1992 },
+    { rank: 4, name: '6th Ave & W 28th St', lat: 40.74619, lon: -73.99029, hotels: 14, rooms: 2755 },
+    { rank: 5, name: 'W 48th St & 8th Ave', lat: 40.76032, lon: -73.98579, hotels: 10, rooms: 6830 },
+  ];
+  let tochkaInfo = {};
+  let tochkaLayer = null;
+  let tchSeq = 0;
+
+  function renderTochkaMenu() {
+    const menu = document.getElementById('tochkaMenu');
+    if (!menu) return;
+    menu.innerHTML = '';
+    const list = TOCHKAS.slice();
+    if (userLat !== null) list.sort((a, b) => havKm(userLat, userLon, a.lat, a.lon) - havKm(userLat, userLon, b.lat, b.lon));
+    list.forEach(t => {
+      const info = tochkaInfo[t.rank];
+      const btn = document.createElement('button');
+      btn.className = 'location-option';
+      btn.title = t.name;
+      btn.innerHTML = `<span class="loc-main"><span class="loc-name">🎯 ${t.name}</span><span style="display:block;font-size:11px;color:rgba(255,255,255,0.78);margin-top:1px">${t.hotels} mehmonxona • ~${t.rooms.toLocaleString('en-US')} xona</span></span>` +
+        `<span class="loc-badges"><span class="loc-badge"><span class="v">${info ? info.dist : (userLat !== null ? (havKm(userLat, userLon, t.lat, t.lon) * 0.621371).toFixed(1) : '--')}</span><span class="u">mi</span></span>` +
+        `<span class="loc-badge min"><span class="v">${info ? info.mins : '--'}</span><span class="u">min</span></span></span>`;
+      btn.addEventListener('click', () => openNavigation(t));
+      menu.appendChild(btn);
+    });
+  }
+
+  function syncTochkaMarkers(show) {
+    if (!map) return;
+    if (!show) {
+      if (tochkaLayer) { map.removeLayer(tochkaLayer); tochkaLayer = null; }
+      return;
+    }
+    if (!tochkaLayer) tochkaLayer = L.layerGroup().addTo(map);
+    tochkaLayer.clearLayers();
+    TOCHKAS.forEach(t => {
+      const icon = L.divIcon({ className: '', html: '<div class="tochka-marker">' + t.hotels + '</div>', iconSize: [28, 28], iconAnchor: [14, 14] });
+      const m = L.marker([t.lat, t.lon], { icon: icon });
+      m.bindTooltip('<b>T' + t.rank + ' — ' + t.name + '</b><br>' + t.hotels + ' mehmonxona', { direction: 'top', offset: [0, -14] });
+      m.on('click', () => openNavigation(t));
+      tochkaLayer.addLayer(m);
+    });
+  }
+
+  function zoomToTochkas() {
+    if (!map) return;
+    const pts = TOCHKAS.map(t => [t.lat, t.lon]);
+    if (userLat !== null) pts.push([userLat, userLon]);
+    map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [30, 130], paddingBottomRight: [30, 320] });
+  }
+
+  async function refreshTochkaRoutes() {
+    if (userLat === null) return;
+    const seq = ++tchSeq;
+    await Promise.all(TOCHKAS.map(async t => {
+      const res = await fetchRoute(userLat, userLon, t);
+      if (seq !== tchSeq) return;
+      if (res) { tochkaInfo[t.rank] = { dist: res.distanceMiles, mins: res.durationMins }; renderTochkaMenu(); }
+    }));
+  }
+
+  function closeTochkaMenu() {
+    const m = document.getElementById('tochkaMenu');
+    if (m && m.classList.contains('open')) {
+      m.classList.remove('open');
+      document.getElementById('stripTochka').classList.remove('active');
+      syncTochkaMarkers(false);
+    }
+  }
+
+  function initTochkaMenu() {
+    const toggle = document.getElementById('stripTochka');
+    const menu = document.getElementById('tochkaMenu');
+    if (!toggle || !menu) return;
+    toggle.addEventListener('click', () => {
+      const isOpen = menu.classList.toggle('open');
+      toggle.classList.toggle('active', isOpen);
+      syncLocationMarkers(false);
+      if (isOpen) {
+        const lm = document.getElementById('locMenu');
+        if (lm && lm.classList.contains('open')) { lm.classList.remove('open'); document.getElementById('stripLocations').classList.remove('active'); restoreSavedView(); }
+        const rm = document.getElementById('restroomMenu');
+        if (rm && rm.classList.contains('open')) { rm.classList.remove('open'); document.getElementById('stripRestrooms').classList.remove('active'); syncRestroomMarkers(false); restoreSavedView(); }
+        const tm = document.getElementById('teslaMenu');
+        if (tm && tm.classList.contains('open')) { tm.classList.remove('open'); document.getElementById('stripHotspots').classList.remove('active'); syncChargerMarkers(false); restoreSavedView(); }
+        placeMenuUnderButton(menu, toggle);
+        if (map) savedView = { center: map.getCenter(), zoom: map.getZoom() };
+        renderTochkaMenu();
+        zoomToTochkas();
+        syncTochkaMarkers(true);
+        refreshTochkaRoutes();
+      }
+      else { syncTochkaMarkers(false); restoreSavedView(); }
+    });
+  }
+
+  // --- Kunduzgi yorqin rejim (07:00–19:00 avtomatik) ---
+  function applyDayMode() {
+    const h = new Date().getHours();
+    document.body.classList.toggle('day-bright', settings.brightAuto && h >= 7 && h < 19);
   }
 
   async function refreshRoutes(force) {
@@ -1376,7 +1815,9 @@
       if (res) {
         anyOk = true;
         if (res.src === 'osrm') sawFallback = true;
+        const prevMins = airportInfo[airport.id] ? airportInfo[airport.id].mins : null;
         airportInfo[airport.id] = { dist: res.distanceMiles, time: res.durationText, mins: res.durationMins, road: res.road || '' };
+        maybeEtaVoice(airport, prevMins, res.durationMins);
         if (routeLines[airport.id]) {
           routeLines[airport.id].setLatLngs(res.points);
         } else {
@@ -1387,7 +1828,7 @@
     }
     routeDegraded = sawFallback;
     updateTrafficLabel();
-    if (anyOk) { lastRouteSuccess = Date.now(); checkStale(); highlightNearest(); }
+    if (anyOk) { lastRouteSuccess = Date.now(); checkStale(); highlightNearest(); etaVoiceReady = true; }
     // Lokatsiyalar sekinroq yangilanadi: har 2 daqiqada, 300 m harakatda yoki majburan (toggle bosilganda)
     const nowL = Date.now();
     let locMoved = Infinity;
@@ -1415,6 +1856,11 @@
     lastLocFetch = 0;
     lastRstFetch = 0;
     refreshRoutes(true);
+    const tmEl = document.getElementById('teslaMenu');
+    if (tmEl && tmEl.classList.contains('open')) loadChargerMenu();
+    const tkEl = document.getElementById('tochkaMenu');
+    if (tkEl && tkEl.classList.contains('open')) refreshTochkaRoutes();
+    applyDayMode();
     updatePointsCircle();
     fetchWeather().then(d => updateStripWx(d.mine.current.temperature_2m)).catch(() => {});
     showToast('Hammasi yangilandi');
@@ -1423,7 +1869,7 @@
   function fitAll() {
     if (!map || userLat === null || !autoZoom) return;
     const pts = [[userLat, userLon], ...AIRPORTS.map(a => [a.lat, a.lon])];
-    map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [45, 140], paddingBottomRight: [45, 250] });
+    map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [45, 140], paddingBottomRight: [45, 320] });
   }
 
   function updateCard(airport) {
@@ -1463,6 +1909,8 @@
   function updatePointsCircle() {
     const now = new Date();
     const st = getPointsState(now);
+    if (prevBonusState === false && st.bonus) speak('Bonus vaqt boshlandi. Endi har bir safar 5 ball.');
+    prevBonusState = st.bonus;
     const mins = now.getHours() * 60 + now.getMinutes();
     const day = now.getDay();
     const num = document.getElementById('pointsNum');
@@ -1532,15 +1980,17 @@
 
   // Tesla Supercharger (Photon / OpenStreetMap, kalitsiz)
   const CHG_CACHE_TTL = 30 * 60 * 1000; // 30 daqiqa
-  let chgCache = { at: 0, data: null };
+  let chgCache = { at: 0, data: null, lat: null, lon: null };
 
   async function fetchChargers() {
     const now = Date.now();
-    if (chgCache.data && now - chgCache.at < CHG_CACHE_TTL) return chgCache.data;
-    const lat = (userLat !== null) ? userLat : 40.7580;
-    const lon = (userLon !== null) ? userLon : -73.9855;
+    const cLat = (userLat !== null) ? userLat : 40.7580;
+    const cLon = (userLon !== null) ? userLon : -73.9855;
+    if (chgCache.data && now - chgCache.at < CHG_CACHE_TTL && chgCache.lat !== null && havKm(cLat, cLon, chgCache.lat, chgCache.lon) < 2) return chgCache.data;
+    const lat = cLat;
+    const lon = cLon;
     const url = 'https://photon.komoot.io/api/?q=' + encodeURIComponent('Tesla Supercharger') + '&lat=' + lat + '&lon=' + lon + '&limit=15';
-    const res = await fetch(url);
+    const res = await fetchT(url);
     const data = await res.json();
     const list = (data.features || [])
       .map(f => {
@@ -1555,42 +2005,10 @@
       .sort((a, b) => a.km - b.km)
       .slice(0, 5);
     const out = { list, at: now };
-    chgCache = { at: now, data: out };
+    chgCache = { at: now, data: out, lat: lat, lon: lon };
     return out;
   }
 
-  async function showChargers() {
-    const modal = document.getElementById('chargeModal');
-    const body = document.getElementById('chargeBody');
-    modal.classList.add('open');
-    body.innerHTML = '<p class="points-note">Yuklanmoqda...</p>';
-    try {
-      const data = await fetchChargers();
-      if (!data.list.length) {
-        body.innerHTML = '<p class="points-note">Yaqin atrofda (50 km) Tesla Supercharger topilmadi.</p>';
-        return;
-      }
-      body.innerHTML = '<div class="f-list">' + data.list.map((c, i) =>
-        '<button class="location-option" data-i="' + i + '"><span class="loc-main"><span class="loc-name">⚡ ' + c.name + '</span><span class="loc-addr">' + c.addr + '</span></span>' +
-        '<span class="loc-badges"><span class="loc-badge"><span class="v" id="chgmi-' + i + '">' + (c.km * 0.621371).toFixed(1) + '</span><span class="u">mi</span></span>' +
-        '<span class="loc-badge min"><span class="v" id="chgmin-' + i + '">--</span><span class="u">min</span></span></span></button>'
-      ).join('') + '</div><p class="points-foot">OpenStreetMap (Photon) asosida • Yangilangan: ' + fmtClock(data.at) + ' • Maʼlumot 30 daqiqaga keshlanadi.</p>';
-      data.list.forEach((c, i) => {
-        body.querySelector('[data-i="' + i + '"]').addEventListener('click', () => openNavigation(c));
-      });
-      if (userLat !== null) {
-        await Promise.all(data.list.map(async (c, i) => {
-          const res = await fetchRoute(userLat, userLon, c);
-          const miEl = document.getElementById('chgmi-' + i);
-          const minEl = document.getElementById('chgmin-' + i);
-          if (miEl && res) miEl.textContent = res.distanceMiles;
-          if (minEl && res) minEl.textContent = res.durationMins;
-        }));
-      }
-    } catch (e) {
-      body.innerHTML = '<p class="points-note">Maʼlumot olinmadi. Internetni tekshirib, birozdan keyin yana urinib ko\'ring.</p>';
-    }
-  }
 
   // Ob-havo: hozirgi joy + 3 ta aeroport + keyingi 6 soat (Open-Meteo)
   async function fetchWeather() {
@@ -1600,8 +2018,8 @@
     const lon = (userLon !== null) ? userLon : -73.9855;
     const base = 'https://api.open-meteo.com/v1/forecast?current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,precipitation_probability,weather_code&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America%2FNew_York&forecast_days=2';
     const [mine, ports] = await Promise.all([
-      fetch(base + '&latitude=' + lat + '&longitude=' + lon).then(r => r.json()),
-      fetch(base + '&latitude=40.6413,40.7769,40.6895&longitude=-73.7781,-73.8740,-74.1745').then(r => r.json())
+      fetchT(base + '&latitude=' + lat + '&longitude=' + lon).then(r => r.json()),
+      fetchT(base + '&latitude=40.6413,40.7769,40.6895&longitude=-73.7781,-73.8740,-74.1745').then(r => r.json())
     ]);
     const data = { mine, ports: Array.isArray(ports) ? ports : [ports], at: now };
     wxCache = { at: now, data };
@@ -1614,13 +2032,17 @@
     if (!el) return;
     const h = new Date().getHours();
     const ico = (h >= 6 && h < 20) ? '☀️' : '🌙';
-    el.textContent = ico + ' ' + Math.round(tempF) + '°F';
+    const ic = el.querySelector('.tab-ic');
+    const lb = el.querySelector('.tab-lb');
+    if (ic) ic.textContent = ico;
+    if (lb) lb.textContent = Math.round(tempF) + '°F';
   }
 
   async function showWeather() {
     const modal = document.getElementById('weatherModal');
     const body = document.getElementById('weatherBody');
     modal.classList.add('open');
+    document.getElementById('stripWx').classList.add('active');
     body.innerHTML = '<p class="points-note">Yuklanmoqda...</p>';
     try {
       const data = await fetchWeather();
@@ -1673,7 +2095,7 @@
     const now = Date.now();
     if (now - liveFlightsCache.at < FLIGHTS_CACHE_TTL) return liveFlightsCache.flights;
     const url = 'https://airlabs.co/api/v9/flights?api_key=' + AIRLABS_KEY + '&_fields=flight_iata,arr_iata,dep_iata,lat,lng,alt,dir,speed,status';
-    const res = await fetch(url);
+    const res = await fetchT(url);
     const data = await res.json();
     if (!data || !Array.isArray(data.response)) throw new Error('bad response');
     liveFlightsCache = { at: now, flights: data.response };
@@ -1816,9 +2238,7 @@
       refreshAll();
     });
     document.getElementById('stripTraffic').addEventListener('click', toggleTraffic);
-    document.getElementById('stripHotspots').addEventListener('click', () => {
-      showChargers();
-    });
+    document.getElementById('stripEzpass').addEventListener('click', toggleEzpass);
     document.getElementById('stripWx').addEventListener('click', () => {
       showWeather();
     });
@@ -1830,6 +2250,7 @@
     );
     if (trafficOn) trafficLayer.addTo(map);
     updateTrafficLabel();
+    updateEzpassLabel();
     let tileErrCount = 0;
     trafficLayer.on('tileerror', () => {
       tileErrCount++;
@@ -1868,9 +2289,13 @@
       const dLon = (longitude - lastFetchLon) * 85000;
       moved = Math.sqrt(dLat * dLat + dLon * dLon);
     }
-    if (!document.hidden && settings.autoUpdate && (now - lastRouteFetch > 60000 || (moved > 300 && now - lastRouteFetch > 20000))) {
+    const routeGap = settings.batterySaver ? 180000 : 60000;
+    const movedGap = settings.batterySaver ? 60000 : 20000;
+    if (!document.hidden && settings.autoUpdate && (now - lastRouteFetch > routeGap || (moved > 300 && now - lastRouteFetch > movedGap))) {
       refreshRoutes();
     }
+    syncCameraMarkers(false);
+    checkCameraProximity(mph);
   }
 
   function onPositionError(err) {
@@ -1891,6 +2316,11 @@
   initMap();
   initLocMenu();
   initRestroomMenu();
+  initTeslaMenu();
+  initTochkaMenu();
+  applyDayMode();
+  setInterval(applyDayMode, 60000);
+  loadCameras();
   renderRestrooms();
 
   // --- Toast (kichik xabar) ---
@@ -1909,15 +2339,25 @@
     const rm = document.getElementById('restroomMenu');
     if (rm && rm.classList.contains('open')) {
       rm.classList.remove('open');
+      document.getElementById('stripRestrooms').classList.remove('active');
       syncRestroomMarkers(false);
       restoreSavedView();
     }
     const lm = document.getElementById('locMenu');
     if (lm && lm.classList.contains('open')) {
       lm.classList.remove('open');
+      document.getElementById('stripLocations').classList.remove('active');
       syncLocationMarkers(false);
       restoreSavedView();
     }
+    const tm = document.getElementById('teslaMenu');
+    if (tm && tm.classList.contains('open')) {
+      tm.classList.remove('open');
+      document.getElementById('stripHotspots').classList.remove('active');
+      syncChargerMarkers(false);
+      restoreSavedView();
+    }
+    closeTochkaMenu();
     document.getElementById('drawer').classList.add('open');
     document.getElementById('drawerOverlay').classList.add('open');
   }
@@ -1967,6 +2407,10 @@
     setToggleUI('setTraffic', settings.traffic);
     setToggleUI('setSpeedWarn', settings.speedWarn);
     setToggleUI('setAutoUpd', settings.autoUpdate);
+    setToggleUI('setCameras', settings.cameras);
+    setToggleUI('setVoice', settings.voice);
+    setToggleUI('setBright', settings.brightAuto);
+    setToggleUI('setBattery', settings.batterySaver);
   }
   document.getElementById('drawerSettings').addEventListener('click', () => {
     closeDrawer();
@@ -1993,6 +2437,32 @@
     saveSettings();
     applySettingsToUI();
   });
+  document.getElementById('setCameras').addEventListener('click', () => {
+    settings.cameras = !settings.cameras;
+    saveSettings();
+    applySettingsToUI();
+    if (settings.cameras) { if (!camList) loadCameras(); else syncCameraMarkers(true); }
+    else if (camLayer && map) { map.removeLayer(camLayer); camLayer = null; }
+  });
+  document.getElementById('setVoice').addEventListener('click', () => {
+    settings.voice = !settings.voice;
+    saveSettings();
+    applySettingsToUI();
+    if (settings.voice) speak('Ovozli ogohlantirishlar yoqildi');
+  });
+  document.getElementById('setBright').addEventListener('click', () => {
+    settings.brightAuto = !settings.brightAuto;
+    saveSettings();
+    applySettingsToUI();
+    applyDayMode();
+  });
+  document.getElementById('setBattery').addEventListener('click', () => {
+    settings.batterySaver = !settings.batterySaver;
+    saveSettings();
+    applySettingsToUI();
+    applyGpsMode();
+    showToast(settings.batterySaver ? 'Batareya tejash ON — yangilanish sekinroq' : 'Batareya tejash OFF');
+  });
   document.getElementById('settingsRefresh').addEventListener('click', () => {
     settingsModal.classList.remove('open');
     refreshRoutes(true);
@@ -2004,6 +2474,15 @@
   const pointsModal = document.getElementById('pointsModal');
   document.getElementById('pointsClose').addEventListener('click', () => pointsModal.classList.remove('open'));
   pointsModal.addEventListener('click', e => { if (e.target === pointsModal) pointsModal.classList.remove('open'); });
+
+  // Tezkor havolalar bo'limlari: sarlavha bosilsa ochilib-yopiladi
+  document.querySelectorAll('.drawer-group-head').forEach(head => {
+    head.addEventListener('click', () => {
+      const grp = document.getElementById(head.dataset.group);
+      const open = grp ? grp.classList.toggle('open') : false;
+      head.classList.toggle('open', open);
+    });
+  });
 
   // TLC Renewal oynasi
   const tlcModal = document.getElementById('tlcModal');
@@ -2017,15 +2496,10 @@
   updatePointsCircle();
   setInterval(updatePointsCircle, 30000);
 
-  // Tesla zaryadlash oynasi
-  const chargeModal = document.getElementById('chargeModal');
-  document.getElementById('chargeClose').addEventListener('click', () => chargeModal.classList.remove('open'));
-  chargeModal.addEventListener('click', e => { if (e.target === chargeModal) chargeModal.classList.remove('open'); });
-
   // Ob-havo oynasi
   const weatherModal = document.getElementById('weatherModal');
-  document.getElementById('weatherClose').addEventListener('click', () => weatherModal.classList.remove('open'));
-  weatherModal.addEventListener('click', e => { if (e.target === weatherModal) weatherModal.classList.remove('open'); });
+  document.getElementById('weatherClose').addEventListener('click', () => { weatherModal.classList.remove('open'); document.getElementById('stripWx').classList.remove('active'); });
+  weatherModal.addEventListener('click', e => { if (e.target === weatherModal) { weatherModal.classList.remove('open'); document.getElementById('stripWx').classList.remove('active'); } });
 
   // Reyslar oynasi
   const flightsModal = document.getElementById('flightsModal');
@@ -2039,13 +2513,38 @@
     });
   }
 
-  if ('geolocation' in navigator) {
-    navigator.geolocation.watchPosition(onPosition, onPositionError, {
-      enableHighAccuracy: true, maximumAge: 3000, timeout: 20000,
-    });
-  } else {
-    onPositionError(new Error('Geolocation not supported'));
+  let gpsWatchId = null;
+  function startGps() {
+    if (!('geolocation' in navigator)) { onPositionError(new Error('Geolocation not supported')); return; }
+    const opts = settings.batterySaver
+      ? { enableHighAccuracy: false, maximumAge: 30000, timeout: 20000 }
+      : { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 };
+    gpsWatchId = navigator.geolocation.watchPosition(onPosition, onPositionError, opts);
   }
+  function applyGpsMode() {
+    if (gpsWatchId !== null && 'geolocation' in navigator) navigator.geolocation.clearWatch(gpsWatchId);
+    gpsWatchId = null;
+    startGps();
+  }
+  // Wake Lock — ilova ochiq turganda ekran o'chib qolmaydi (rulda qulay)
+  let wakeLock = null;
+  async function keepAwake() {
+    try { if ('wakeLock' in navigator && document.visibilityState === 'visible') wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', keepAwake);
+  keepAwake();
+
+  // Offline banner — internet uzilsa/qaytsa
+  function syncOnline() {
+    const bar = document.getElementById('offlineBar');
+    if (bar) bar.classList.toggle('show', !navigator.onLine);
+    if (navigator.onLine) refreshRoutes(true);
+  }
+  window.addEventListener('offline', syncOnline);
+  window.addEventListener('online', syncOnline);
+  if (!navigator.onLine) { const b0 = document.getElementById('offlineBar'); if (b0) b0.classList.add('show'); }
+
+  startGps();
 
   // GPS javobi kelmasa (ruxsat so'rovi javobsiz qolsa) loader 15 s dan keyin o'zi yopiladi
   setTimeout(() => {
